@@ -15,16 +15,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi make python3 python3-docutils zip git mercurial pkg-config
 
+      - name: Compiler wrapper (-fcommon for old ML code)
+        run: |
+          mkdir -p "$HOME/wrap"
+          printf '#!/bin/sh\nexec /usr/bin/arm-none-eabi-gcc -fcommon -Wno-error "$@"\n' > "$HOME/wrap/arm-none-eabi-gcc"
+          chmod +x "$HOME/wrap/arm-none-eabi-gcc"
+
       - name: Build 1300D.120
         run: |
+          export PATH="$HOME/wrap:$PATH"
           cd platform/1300D.120
           make clean || true
           make -j"$(nproc)" zip || make -j"$(nproc)"
 
       - name: Collect artifacts
+        if: always()
         run: |
           mkdir -p out
-          find platform/1300D.120 -maxdepth 2 \( -name 'autoexec.bin' -o -name '*.zip' \) -exec cp {} out/ \;
+          find platform/1300D.120 -maxdepth 2 \( -name 'autoexec.bin' -o -name '*.zip' -o -name 'magiclantern*' \) -type f -exec cp {} out/ \;
           ls -la out
 
       - uses: actions/upload-artifact@v4
@@ -32,4 +40,3 @@ jobs:
         with:
           name: ml-1300D-120
           path: out/
-
