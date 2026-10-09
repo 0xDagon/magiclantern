@@ -583,7 +583,7 @@ int display_is_on_550D = 0;
 int get_display_is_on_550D() { return display_is_on_550D; }
 void config_save(){};
 int get_ms_clock() { return 0; }
-char * get_task_name_from_id(int id) { return ""; }
+const char * get_task_name_from_id(int id) { return ""; }
 void beep() {} ;
 uint32_t ml_used_mem = 0;
 uint32_t ml_reserved_mem = 0;
@@ -605,7 +605,7 @@ struct memSuite * _shoot_malloc_suite_contig(size_t size) { return 0; }
 void _shoot_free_suite(struct memSuite * suite) {}
 struct memSuite * _srm_malloc_suite(int num) { return 0; }
 void _srm_free_suite(struct memSuite * suite) {}
-char* get_current_task_name() { return "?"; }
+/* get_current_task_name() is provided by tasks.h */
 int printf(const char * format, ...) { return 0; }
 
 int y_times_BMPPITCH_cache[BMP_H_PLUS - BMP_H_MINUS];
