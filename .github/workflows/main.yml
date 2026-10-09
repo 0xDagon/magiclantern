@@ -21,26 +21,19 @@ jobs:
           printf '#!/bin/sh\nexec /usr/bin/arm-none-eabi-gcc -fcommon -Wno-error "$@"\n' > "$HOME/wrap/arm-none-eabi-gcc"
           chmod +x "$HOME/wrap/arm-none-eabi-gcc"
 
-      - name: Build autoexec.bin
+      - name: Build zip package
         run: |
           export PATH="$HOME/wrap:$PATH"
           cd platform/1300D.120
           make clean || true
-          make -j"$(nproc)"
+          make SHELL=/bin/bash -j"$(nproc)"
+          make SHELL=/bin/bash zip 2>&1 | tee /tmp/zip.log | tail -n 40
+          test "${PIPESTATUS[0]}" -eq 0
 
-      - name: Build zip package
-        continue-on-error: true
-        run: |
-          export PATH="$HOME/wrap:$PATH"
-          cd platform/1300D.120
-          set -o pipefail
-          make zip 2>&1 | tee /tmp/zip.log | tail -n 60
-
-      - name: Show zip result
+      - name: Show result
         if: always()
         run: |
-          echo "=== zip.log tail ==="; tail -n 40 /tmp/zip.log || true
-          echo "=== zip dir ==="; find platform/1300D.120/zip -maxdepth 3 | head -n 80 || true
+          echo "=== zip dir ==="; find platform/1300D.120/zip -maxdepth 3 | head -n 100 || true
           echo "=== zips ==="; find . -name '*.zip' | head || true
 
       - name: Collect artifacts
@@ -48,10 +41,9 @@ jobs:
         run: |
           mkdir -p out
           cp -r platform/1300D.120/zip/. out/ 2>/dev/null || true
-          find platform/1300D.120 -maxdepth 2 \( -name 'autoexec.bin' -o -name '*.zip' \) -type f -exec cp {} out/ \;
-          mkdir -p out/_modules && find modules -name '*.mo' -exec cp {} out/_modules/ \; || true
+          find platform/1300D.120 -maxdepth 2 -name '*.zip' -type f -exec cp {} out/ \;
           cp /tmp/zip.log out/ 2>/dev/null || true
-          ls -laR out | head -n 120
+          ls -laR out | head -n 150
 
       - uses: actions/upload-artifact@v4
         if: always()
