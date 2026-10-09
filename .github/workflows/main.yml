@@ -21,6 +21,67 @@ jobs:
           printf '#!/bin/sh\nexec /usr/bin/arm-none-eabi-gcc -fcommon -Wno-error "$@"\n' > "$HOME/wrap/arm-none-eabi-gcc"
           chmod +x "$HOME/wrap/arm-none-eabi-gcc"
 
+      - name: Build autoexec.bin
+        run: |
+          export PATH="$HOME/wrap:$PATH"
+          cd platform/1300D.120
+          make clean || true
+          make -j"$(nproc)"
+
+      - name: Build zip package
+        continue-on-error: true
+        run: |
+          export PATH="$HOME/wrap:$PATH"
+          cd platform/1300D.120
+          set -o pipefail
+          make zip 2>&1 | tee /tmp/zip.log | tail -n 60
+          echo "ZIP_EXIT=$?"
+
+      - name: Show zip result
+        if: always()
+        run: |
+          echo "=== zip.log tail ==="; tail -n 40 /tmp/zip.log || true
+          echo "=== zip dir ==="; find platform/1300D.120/zip -maxdepth 3 | head -n 80 || true
+          echo "=== zips ==="; find . -name '*.zip' -newer platform/1300D.120/Makefile | head || true
+
+      - name: Collect artifacts
+        if: always()
+        run: |
+          mkdir -p out
+          cp -r platform/1300D.120/zip/. out/ 2>/dev/null || true
+          find platform/1300D.120 -maxdepth 2 \( -name 'autoexec.bin' -o -name '*.zip' \) -type f -exec cp {} out/ \;
+          mkdir -p out/_modules && find modules -name '*.mo' -exec cp {} out/_modules/ \; || true
+          cp /tmp/zip.log out/ 2>/dev/null || true
+          ls -laR out | head -n 120
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ml-1300D-120
+          path: out/
+name: build-1300d
+on:
+  workflow_dispatch:
+  push:
+    branches: ["branches/1300D"]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi make python3 python3-docutils zip git mercurial pkg-config
+
+      - name: Compiler wrapper (-fcommon for old ML code)
+        run: |
+          mkdir -p "$HOME/wrap"
+          printf '#!/bin/sh\nexec /usr/bin/arm-none-eabi-gcc -fcommon -Wno-error "$@"\n' > "$HOME/wrap/arm-none-eabi-gcc"
+          chmod +x "$HOME/wrap/arm-none-eabi-gcc"
+
       - name: Build 1300D.120
         run: |
           export PATH="$HOME/wrap:$PATH"
