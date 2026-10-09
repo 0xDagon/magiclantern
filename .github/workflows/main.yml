@@ -36,19 +36,20 @@ jobs:
           mkdir -p platform/1300D.120/zip/ML/modules platform/1300D.120/zip/ML/settings platform/1300D.120/zip/ML/logs
           find modules -name '*.mo' -exec cp {} platform/1300D.120/zip/ML/modules/ \; || true
 
-      - name: Build AUTOEXEC.FIR (one-shot run from Canon menu, no bootflag)
+      - name: Build installer (ML-SETUP.FIR)
         continue-on-error: true
         run: |
           export PATH="$HOME/wrap:$PATH"
-          cd platform/1300D.120
-          make SHELL=/bin/bash autoexec-fir 2>&1 | tee /tmp/fir.log | tail -n 40
+          cd installer/1300D.120
+          make clean || true
+          make SHELL=/bin/bash installer 2>&1 | tee /tmp/installer.log | tail -n 60
           ls -la
 
       - name: Show result
         if: always()
         run: |
-          echo "=== fir.log tail ==="; tail -n 30 /tmp/fir.log || true
-          echo "=== fir files in 1300D.120 ==="; ls -la platform/1300D.120 | grep -i fir || true
+          echo "=== installer tail ==="; tail -n 40 /tmp/installer.log || true
+          echo "=== fir files in installer/1300D.120 ==="; ls -la installer/1300D.120 | grep -i fir || true
           echo "=== zip dir ==="; find platform/1300D.120/zip -maxdepth 3 | head -n 120 || true
 
       - name: Pack release
@@ -58,9 +59,9 @@ jobs:
           cd platform/1300D.120/zip
           zip -r ../../../out/ML-1300D-120.zip . || true
           cd ../../..
-          find platform/1300D.120 -maxdepth 1 -iname '*.fir' -exec cp {} out/ \; || true
+          find installer/1300D.120 -maxdepth 1 -iname '*.fir' -exec cp {} out/ \; || true
           cp platform/1300D.120/zip/autoexec.bin out/ 2>/dev/null || true
-          cp /tmp/zip.log /tmp/fir.log out/ 2>/dev/null || true
+          cp /tmp/zip.log /tmp/installer.log out/ 2>/dev/null || true
           ls -la out
 
       - uses: actions/upload-artifact@v4
